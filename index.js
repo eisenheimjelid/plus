@@ -45,7 +45,7 @@ const bootstrap = ( options = {}) => {
   server.post( '/', app.handlePost );
 
   // Static assets.
-  server.get( '/assets/*', ( request, response ) => {
+  server.get( '/assets/*file', ( request, response ) => {
     const path = 'src/' + request._parsedUrl.path,
           type = mime.getType( path );
 

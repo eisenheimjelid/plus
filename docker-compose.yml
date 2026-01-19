@@ -1,9 +1,6 @@
-
-version: '3'
-
 services:
   web:
-    image: node:12.16
+    image: node:lts-slim
     expose:
       - 80
     volumes:
