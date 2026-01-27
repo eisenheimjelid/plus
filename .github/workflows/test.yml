@@ -1,0 +1,27 @@
+name: Node.js Testing
+
+on:
+    push:
+        branches: ["main", "issue-21-b"]
+    pull_request:
+        branches: ["main", "issue-21-b"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [20.x, 24.x]
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+
+            - run: yarn web install
+            - run: node web --test src/test/app.test.js
