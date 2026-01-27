@@ -23,5 +23,5 @@ jobs:
                   node-version: ${{ matrix.node-version }}
                   cache: "npm"
 
-            - run: yarn web install
+            - run: yarn web
             - run: node web --test src/test/app.test.js
