@@ -2,7 +2,7 @@ install:
 	docker compose run -u node --rm -T --entrypoint yarn web
 
 test:
-	docker compose run --rm --entrypoint node web --test src/test/app.test.js
+	docker compose run --rm --entrypoint node web --test src/test/*.test.js
 
 up:
 	docker compose up -d

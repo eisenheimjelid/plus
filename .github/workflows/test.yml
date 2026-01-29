@@ -24,4 +24,4 @@ jobs:
                   cache: "npm"
 
             - run: yarn install
-            - run: node --test src/test/app.test.js
+            - run: node --test src/test/*.test.js
