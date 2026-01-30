@@ -11,7 +11,7 @@
 
 'use strict';
 
-const pg = require( 'pg' );
+import pg from 'pg';
 
 /* eslint-disable no-process-env */
 const DATABASE_URL = process.env.DATABASE_URL,
@@ -36,7 +36,7 @@ const postgres = new pg.Pool( postgresPoolConfig );
  * @return {array} An array of entries, each an object containing 'item' (string) and 'score'
  *                (integer) properties.
  */
-const retrieveTopScores = async() => {
+export const retrieveTopScores = async() => {
 
   const query = 'SELECT * FROM ' + scoresTableName + ' ORDER BY score DESC';
 
@@ -62,7 +62,7 @@ const retrieveTopScores = async() => {
  * @param {string} operation The mathematical operation performed on the item's score.
  * @return {int} The item's new score after the update has been applied.
  */
-const updateScore = async( item, operation ) => {
+export const updateScore = async( item, operation ) => {
 
   // Connect to the DB, and create a table if it's not yet there.
   // We also set up the citext extension, so that we can easily be case insensitive.
@@ -93,7 +93,7 @@ const updateScore = async( item, operation ) => {
 
 }; // UpdateScore.
 
-module.exports = {
+export default {
   retrieveTopScores,
   updateScore
 };

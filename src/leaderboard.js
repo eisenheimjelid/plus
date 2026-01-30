@@ -6,11 +6,11 @@
 
 'use strict';
 
-const slack = require( './slack' ),
-      points = require( './points' ),
-      helpers = require( './helpers' );
+import slack from './slack.js';
+import points from './points.js';
+import helpers from './helpers.js';
 
-const querystring = require( 'querystring' );
+import querystring from 'querystring';
 
 /**
  * Gets the URL for the full leaderboard, including a token to ensure that it is only viewed by
@@ -19,7 +19,7 @@ const querystring = require( 'querystring' );
  * @param {object} request The Express request object that resulted in this handler being run.
  * @returns {string} The leaderboard URL, which will be picked up in ../index.js when called.
  */
-const getLeaderboardUrl = ( request ) => {
+export const getLeaderboardUrl = ( request ) => {
 
   const hostname = request.headers.host,
         ts = helpers.getTimestamp();
@@ -54,7 +54,7 @@ const getLeaderboardUrl = ( request ) => {
  *                  format is 'slack') or objects containing 'rank', 'item' and 'score' values (if
  *                  format is 'object').
  */
-const rankItems = async( topScores, itemType = 'users', format = 'slack' ) => {
+export const rankItems = async( topScores, itemType = 'users', format = 'slack' ) => {
 
   let lastScore, lastRank, output;
   const items = [];
@@ -145,7 +145,7 @@ const rankItems = async( topScores, itemType = 'users', format = 'slack' ) => {
  * @param {object} request The Express request object that resulted in this handler being run.
  * @returns {Promise} A Promise to send the Slack message.
  */
-const getForSlack = async( event, request ) => {
+export const getForSlack = async( event, request ) => {
 
   const limit = 5;
 
@@ -190,7 +190,7 @@ const getForSlack = async( event, request ) => {
  * @param {object} request The Express request object that resulted in this handler being run.
  * @returns {string} HTML for the browser.
  */
-const getForWeb = async( request ) => {
+export const getForWeb = async( request ) => {
 
   const scores = await points.retrieveTopScores(),
         users = await rankItems( scores, 'users', 'object' ),
@@ -211,7 +211,7 @@ const getForWeb = async( request ) => {
  * @returns {Promise<{things: *, users: *}>}
  *   Data with top users.
  */
-const getForAPI = async() => {
+export const getForAPI = async() => {
 
   const scores = await points.retrieveTopScores(),
         users = await rankItems( scores, 'users', 'object' );
@@ -232,11 +232,11 @@ const getForAPI = async() => {
  * @param {*} request See the documentation for getForSlack.
  * @returns {*} See the documentation for getForSlack.
  */
-const handler = async( event, request ) => {
+export const handler = async( event, request ) => {
   return getForSlack( event, request );
 };
 
-module.exports = {
+export default {
   getLeaderboardUrl,
   rankItems,
   getForSlack,

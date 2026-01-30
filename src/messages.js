@@ -9,10 +9,11 @@
 
 'use strict';
 
-const helpers = require( './helpers' );
-const operations = require( './operations' ).operations;
+import helpers from './helpers.js';
+import operationsPkg from './operations.js';
+const { operations } = operationsPkg;
 
-const messages = {};
+export const messages = {};
 
 messages[operations.PLUS] = [ {
   probability: 100,
@@ -105,7 +106,7 @@ messages[operations.MINUSPLUS] = [ {
  *
  * @returns {string} A random message from the chosen pool.
  */
-const getRandomMessage = ( operation, item, score = 0 ) => {
+export const getRandomMessage = ( operation, item, score = 0 ) => {
 
   const messageSets = messages[operation];
   let format = '';
@@ -163,7 +164,7 @@ const getRandomMessage = ( operation, item, score = 0 ) => {
 
 }; // GetRandomMessage.
 
-module.exports = {
+export default {
   messages,
   getRandomMessage
 };

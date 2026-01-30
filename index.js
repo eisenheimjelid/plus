@@ -9,14 +9,14 @@
 
 'use strict';
 
-const app = require( './src/app' ),
-      slack = require( './src/slack' );
-
-const fs = require( 'fs' ),
-      mime = require( 'mime' ),
-      express = require( 'express' ),
-      bodyParser = require( 'body-parser' ),
-      slackClient = require( '@slack/client' );
+import app from './src/app.js';
+import slack from './src/slack.js';
+import express from 'express';
+import fs from 'fs';
+import mime from 'mime';
+import bodyParser from 'body-parser';
+import slackClient from '@slack/client';
+import { fileURLToPath } from 'url';
 
 /* eslint-disable no-process-env, no-magic-numbers */
 const PORT = process.env.PORT || 80; // Let Heroku set the port.
@@ -64,8 +64,8 @@ const bootstrap = ( options = {}) => {
 }; // Bootstrap.
 
 // If module was called directly, bootstrap now.
-if ( require.main === module ) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   bootstrap();
 }
 
-module.exports = bootstrap;
+export default bootstrap;

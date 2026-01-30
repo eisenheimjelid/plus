@@ -1,35 +1,37 @@
-const { describe, it, mock, before, beforeEach } = require('node:test');
-const assert = require('node:assert');
-const request = require('supertest');
-const express = require('express');
-const Module = require('module');
+import { describe, it, mock, before, beforeEach } from 'node:test';
+import assert from 'node:assert';
+import request from 'supertest';
+import express from 'express';
+import esmock from 'esmock';
 
-// 1. Mock dependencies
+// 1. Define mocks
 const handleEventMock = mock.fn(() => Promise.resolve(true));
 const getForWebMock = mock.fn(() => Promise.resolve('Leaderboard HTML'));
 const getForAPIMock = mock.fn(() => Promise.resolve({ top: [] }));
 const isTimeBasedTokenStillValidMock = mock.fn(() => true);
 
-// 2. Intercept require to provide mocks
-const originalRequire = Module.prototype.require;
-mock.method(Module.prototype, 'require', function(path) {
-  if (path === './events') {
-    return { handleEvent: handleEventMock };
-  }
-  if (path === './leaderboard') {
-    return { getForWeb: getForWebMock, getForAPI: getForAPIMock };
-  }
-  if (path === './helpers') {
-    return { isTimeBasedTokenStillValid: isTimeBasedTokenStillValidMock };
-  }
-  return originalRequire.apply(this, arguments);
-});
-
-// 3. Setup Environment Variables BEFORE requiring app.js
+// 2. Setup Environment Variables BEFORE importing
 process.env.SLACK_VERIFICATION_TOKEN = 'test-verification-token';
 
-// 4. Require the module under test
-const appHandlers = require('../app.js');
+// 3. Import the module under test using esmock
+const { default: appHandlers } = await esmock('../app.js', {
+  '../events.js': {
+    default: { handleEvent: handleEventMock },
+    handleEvent: handleEventMock
+  },
+  '../leaderboard.js': {
+    default: { getForWeb: getForWebMock, getForAPI: getForAPIMock },
+    getForWeb: getForWebMock,
+    getForAPI: getForAPIMock
+  },
+  '../helpers.js': {
+    default: { isTimeBasedTokenStillValid: isTimeBasedTokenStillValidMock },
+    isTimeBasedTokenStillValid: isTimeBasedTokenStillValidMock
+  }
+});
+
+// 3. Setup Environment Variables - moved to top
+// process.env.SLACK_VERIFICATION_TOKEN = 'test-verification-token';
 
 describe('Pruebas Unitarias - Slack Plus', () => {
     

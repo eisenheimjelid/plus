@@ -10,9 +10,9 @@
 
 'use strict';
 
-const events = require( './events' ),
-      helpers = require( './helpers' ),
-      leaderboard = require( './leaderboard' );
+import events from './events.js';
+import helpers from './helpers.js';
+import leaderboard from './leaderboard.js';
 
 // eslint-disable-next-line no-process-env
 const SLACK_VERIFICATION_TOKEN = process.env.SLACK_VERIFICATION_TOKEN;
@@ -77,7 +77,7 @@ const validateToken = ( suppliedToken, serverToken ) => {
  * @param {express.res} response An Express response. See https://expressjs.com/en/4x/api.html#res.
  * @return {void}
  */
-const handleGet = async( request, response ) => {
+export const handleGet = async( request, response ) => {
   logRequest( request );
 
   switch ( request.path.replace( /\/$/, '' ) ) {
@@ -115,7 +115,7 @@ const handleGet = async( request, response ) => {
  * @return {bool|Promise} Either `false` if the event cannot be handled, or a Promise as returned
  *                        by `events.handleEvent()`.
  */
-const handlePost = ( request, response ) => {
+export const handlePost = ( request, response ) => {
   logRequest( request );
 
   // Respond to challenge sent by Slack during event subscription set up.
@@ -150,7 +150,7 @@ const handlePost = ( request, response ) => {
 
 }; // HandlePost.
 
-module.exports = {
+export default {
   logRequest,
   validateToken,
   handleGet,

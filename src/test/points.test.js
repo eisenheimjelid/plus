@@ -1,8 +1,8 @@
-const { test, describe, it, mock, beforeEach } = require('node:test');
-const assert = require('node:assert');
-const Module = require('module');
+import { test, describe, it, mock, beforeEach } from 'node:test';
+import assert from 'node:assert';
+import esmock from 'esmock';
 
-// Create spies for the methods we want to observe
+// Create spies
 const queryMock = mock.fn();
 const releaseMock = mock.fn();
 const connectMock = mock.fn(async () => ({
@@ -10,7 +10,6 @@ const connectMock = mock.fn(async () => ({
   release: releaseMock
 }));
 
-// Mock the Pool class
 class MockPool {
   constructor(config) {
     this.config = config;
@@ -18,18 +17,13 @@ class MockPool {
   connect = connectMock;
 }
 
-// Intercept CommonJS require to mock 'pg'
-// We use mock.method on Module.prototype.require to handle the import of 'pg' inside points.js
-const originalRequire = Module.prototype.require;
-mock.method(Module.prototype, 'require', function(path) {
-  if (path === 'pg') {
-    return { Pool: MockPool };
+// Import module with esmock
+const { default: points } = await esmock('../points.js', {
+  'pg': {
+    default: { Pool: MockPool },
+    Pool: MockPool
   }
-  return originalRequire.apply(this, arguments);
 });
-
-// Now require the module under test
-const points = require('../points');
 
 describe('Points Module', () => {
 

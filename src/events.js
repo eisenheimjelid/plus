@@ -7,14 +7,15 @@
 
 'use strict';
 
-const slack = require( './slack' ),
-      points = require( './points' ),
-      helpers = require( './helpers' ),
-      messages = require( './messages' ),
-      operations = require( './operations' ),
-      leaderboard = require( './leaderboard' );
+import slack from './slack.js';
+import points from './points.js';
+import helpers from './helpers.js';
+import messages from './messages.js';
+import operationsPkg from './operations.js';
+const { operations } = operationsPkg;
+import leaderboard from './leaderboard.js';
 
-const camelCase = require( 'lodash.camelcase' );
+import camelCase from 'lodash.camelcase';
 
 /**
  * Handles an attempt by a user to 'self plus' themselves, which includes both logging the attempt
@@ -25,7 +26,7 @@ const camelCase = require( 'lodash.camelcase' );
  *                         private channels - aka groups) that the message was sent from.
  * @return {Promise} A Promise to send a Slack message back to the requesting channel.
  */
-const handleSelfPlus = ( user, channel ) => {
+export const handleSelfPlus = ( user, channel ) => {
   console.log( user + ' tried to alter their own score.' );
   const message = messages.getRandomMessage( operations.operations.SELF, user );
   return slack.sendMessage( message, channel );
@@ -42,7 +43,7 @@ const handleSelfPlus = ( user, channel ) => {
  * @return {Promise} A Promise to send a Slack message back to the requesting channel after the
  *                   points have been updated.
  */
-const handlePlusMinus = async( item, operation, channel ) => {
+export const handlePlusMinus = async( item, operation, channel ) => {
   const score = await points.updateScore( item, operation ),
         operationName = operations.getOperationName( operation ),
         message = messages.getRandomMessage( operationName, item, score );
@@ -70,7 +71,7 @@ const handlePlusPlusMinusMinus = async( item, channel ) => {
  *                         https://api.slack.com/events/app_mention for details.
  * @returns {Promise} A Promise to send the Slack message.
  */
-const sayThankyou = ( event ) => {
+export const sayThankyou = ( event ) => {
 
   const thankyouMessages = [
     '¡Ni lo menciones!',
@@ -98,7 +99,7 @@ const sayThankyou = ( event ) => {
  *                         https://api.slack.com/events/app_mention for details.
  * @returns {Promise} A Promise to send the Slack message.
  */
-const sendHelp = ( event ) => {
+export const sendHelp = ( event ) => {
 
   const botUserID = helpers.extractUserID( event.text );
 
@@ -118,7 +119,7 @@ const sendHelp = ( event ) => {
 
 }; // SendHelp.
 
-const handlers = {
+export const handlers = {
 
   /**
    * Handles standard incoming 'message' events sent from Slack.
@@ -206,7 +207,7 @@ const handlers = {
  * @return {bool|Promise} Either `false` if the event cannot be handled, or a Promise as returned
  *                        by the event's handler function.
  */
-const handleEvent = ( event, request ) => {
+export const handleEvent = ( event, request ) => {
 
   // If the event has no type, something has gone wrong.
   if ( 'undefined' === typeof event.type ) {
@@ -241,7 +242,7 @@ const handleEvent = ( event, request ) => {
 
 }; // HandleEvent.
 
-module.exports = {
+export default {
   handleSelfPlus,
   handlePlusMinus,
   sayThankyou,

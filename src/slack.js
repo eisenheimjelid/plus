@@ -21,7 +21,7 @@ let slack, users;
  *                           https://github.com/slackapi/node-slack-sdk/blob/master/src/WebClient.ts
  * @returns {void}
  */
-const setSlackClient = ( client ) => {
+export const setSlackClient = ( client ) => {
   slack = client;
 };
 
@@ -30,7 +30,7 @@ const setSlackClient = ( client ) => {
  *
  * @returns {object} A collection of Slack user objects, indexed by the user IDs (Uxxxxxxxx).
  */
-const getUserList = async() => {
+export const getUserList = async() => {
 
   if ( users ) {
     return users;
@@ -61,7 +61,7 @@ const getUserList = async() => {
  * @param {bool}   username Whether the username should always be returned instead of the real name.
  * @returns {string} The user's real name, as per their Slack profile.
  */
-const getUserName = async( userId, username = false ) => {
+export const getUserName = async( userId, username = false ) => {
 
   const users = await getUserList(),
         user = users[ userId ];
@@ -84,7 +84,7 @@ const getUserName = async( userId, username = false ) => {
  *                                be provided as part of the payload in the previous argument.
  * @return {Promise} A Promise to send the message to Slack.
  */
-const sendMessage = ( text, channel ) => {
+export const sendMessage = ( text, channel ) => {
 
   let payload = {
     channel,
@@ -112,7 +112,7 @@ const sendMessage = ( text, channel ) => {
   }); // Return new Promise.
 }; // SendMessage.
 
-module.exports = {
+export default {
   setSlackClient,
   getUserList,
   getUserName,

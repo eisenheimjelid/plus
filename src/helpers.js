@@ -6,11 +6,11 @@
 
 'use strict';
 
-const slack = require( './slack' );
+import slack from './slack.js';
 
-const fs = require( 'fs' ),
-      crypto = require( 'crypto' ),
-      handlebars = require( 'handlebars' );
+import fs from 'fs';
+import crypto from 'crypto';
+import handlebars from 'handlebars';
 
 const templates = {};
 
@@ -33,7 +33,7 @@ const ONE_DAY = 60 * 60 * 24, // eslint-disable-line no-magic-numbers
  * @param {array}  commands The commands to look for.
  * @return {string|Boolean} Either the first command found, or false if no commands were found.
  */
-const extractCommand = ( message, commands ) => {
+export const extractCommand = ( message, commands ) => {
 
   let firstLocation = Number.MAX_SAFE_INTEGER,
       firstCommand;
@@ -60,7 +60,7 @@ const extractCommand = ( message, commands ) => {
  *                   'operation' being done on it - expressed as a valid mathematical operation
  *                   (i.e. + or -).
  */
-const extractPlusMinusEventData = ( text ) => {
+export const extractPlusMinusEventData = ( text ) => {
   const data = text.match( /@([A-Za-z0-9]+?)>?\s*(-{2}\+{2}|\+{2}-{2}|\+{2}|-{2}|—{1})/ );
 
   if ( ! data ) {
@@ -97,7 +97,7 @@ const extractPlusMinusEventData = ( text ) => {
  *                   could not be found.
  * @see ::isUser
  */
-const extractUserID = ( text ) => {
+export const extractUserID = ( text ) => {
   const match = text.match( /U[A-Z0-9]{8}/ );
   return match ? match[0] : '';
 };
@@ -108,7 +108,7 @@ const extractUserID = ( text ) => {
  * @param {string} ts A timestamp to hash into the token.
  * @returns {string} A token, that can be re-checked later using the same timestamp.
  */
-const getTimeBasedToken = ( ts ) => {
+export const getTimeBasedToken = ( ts ) => {
 
   if ( ! ts ) {
     throw Error( 'Timestamp not provided when getting time-based token.' );
@@ -125,7 +125,7 @@ const getTimeBasedToken = ( ts ) => {
  *
  * @returns {integer} The current Unix timestamp.
  */
-const getTimestamp = () => {
+export const getTimestamp = () => {
   return Math.floor( Date.now() / MILLISECONDS_TO_SECONDS );
 };
 
@@ -135,7 +135,7 @@ const getTimestamp = () => {
  * @param {integer} number The number in question.
  * @returns {Boolean} Whether or not the number is a plural.
  */
-const isPlural = ( number ) => {
+export const isPlural = ( number ) => {
   return 1 !== Math.abs( number );
 };
 
@@ -147,7 +147,7 @@ const isPlural = ( number ) => {
  * @param {integer} ts    The timestamp the token was supplied with.
  * @returns {boolean} Whether or not the token is valid.
  */
-const isTimeBasedTokenStillValid = ( token, ts ) => {
+export const isTimeBasedTokenStillValid = ( token, ts ) => {
   const now = getTimestamp();
 
   // Don't support tokens too far from the past.
@@ -176,7 +176,7 @@ const isTimeBasedTokenStillValid = ( token, ts ) => {
  * @returns {Boolean} Whether or not the string is a Slack user ID.
  * @see ::extractUserID()
  */
-const isUser = ( item ) => {
+export const isUser = ( item ) => {
   return item.match( /U[A-Z0-9]{8}/ ) ? true : false;
 };
 
@@ -188,7 +188,7 @@ const isUser = ( item ) => {
  * @return {string} The item linked with Slack mrkdwn
  * @see https://api.slack.com/docs/message-formatting#linking_to_channels_and_users
  */
-const maybeLinkItem = ( item ) => {
+export const maybeLinkItem = ( item ) => {
   return isUser( item ) ? '<@' + item + '>' : item;
 };
 
@@ -200,7 +200,7 @@ const maybeLinkItem = ( item ) => {
  * @return {int} item
  *   The id.
  */
-const returnAsId = ( item ) => {
+export const returnAsId = ( item ) => {
   return item;
 };
 
@@ -222,7 +222,7 @@ const returnAsId = ( item ) => {
  * @returns {string} HTML ready to be rendered in the browser.
  * @see https://handlebarsjs.com/
  */
-const render = async( templatePath, context = {}, request = {}) => {
+export const render = async( templatePath, context = {}, request = {}) => {
 
   // Retrieve the header and footer HTML, if we don't already have it in memory.
   if ( ! templates.header ) templates.header = fs.readFileSync( 'src/html/header.html', 'utf8' );
@@ -249,7 +249,7 @@ const render = async( templatePath, context = {}, request = {}) => {
 
 }; // Render.
 
-module.exports = {
+export default {
   extractCommand,
   extractPlusMinusEventData,
   extractUserID,
