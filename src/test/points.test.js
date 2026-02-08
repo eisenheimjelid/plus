@@ -2,26 +2,38 @@ import { test, describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import esmock from 'esmock';
 
-// Create spies
-const queryMock = mock.fn();
-const releaseMock = mock.fn();
-const connectMock = mock.fn(async () => ({
-  query: queryMock,
-  release: releaseMock
-}));
+// MongoDB spies
+const createIndexMock = mock.fn(async () => ( { name: 'normalizedItem_1' } ));
+const findMock = mock.fn();
+const sortMock = mock.fn();
+const toArrayMock = mock.fn();
+const findOneAndUpdateMock = mock.fn();
 
-class MockPool {
-  constructor(config) {
-    this.config = config;
+const collection = {
+  createIndex: createIndexMock,
+  find: findMock,
+  findOneAndUpdate: findOneAndUpdateMock
+};
+
+const collectionFn = mock.fn(() => collection);
+const dbMock = mock.fn(() => ( { collection: collectionFn } ));
+const connectMock = mock.fn(async () => ( { db: dbMock } ));
+
+class MockMongoClient {
+  constructor(uri, options) {
+    this.uri = uri;
+    this.options = options;
   }
   connect = connectMock;
 }
 
+findMock.mock.mockImplementation(() => ( { sort: sortMock } ));
+sortMock.mock.mockImplementation(() => ( { toArray: toArrayMock } ));
+
 // Import module with esmock
 const { default: points } = await esmock('../points.js', {
-  'pg': {
-    default: { Pool: MockPool },
-    Pool: MockPool
+  'mongodb': {
+    MongoClient: MockMongoClient
   }
 });
 
@@ -29,13 +41,18 @@ describe('Points Module', () => {
 
   beforeEach(() => {
     // Reset call counts between tests
-    queryMock.mock.resetCalls();
-    releaseMock.mock.resetCalls();
     connectMock.mock.resetCalls();
+    createIndexMock.mock.resetCalls();
+    findMock.mock.resetCalls();
+    sortMock.mock.resetCalls();
+    toArrayMock.mock.resetCalls();
+    findOneAndUpdateMock.mock.resetCalls();
+    collectionFn.mock.resetCalls();
+    dbMock.mock.resetCalls();
   });
 
   describe('retrieveTopScores', () => {
-    it('should connect, query, release, and return rows', async () => {
+    it('should connect, query, and return rows', async () => {
       // Arrange
       const fakeRows = [
         { item: 'Alice', score: 10 },
@@ -43,24 +60,25 @@ describe('Points Module', () => {
       ];
       
       // Setup the query mock to return our fake data
-      queryMock.mock.mockImplementationOnce(async () => {
-        return { rows: fakeRows, rowCount: 2 };
-      });
+      toArrayMock.mock.mockImplementationOnce( async () => fakeRows );
 
       // Act
       const result = await points.retrieveTopScores();
 
       // Assert
-      assert.strictEqual(connectMock.mock.calls.length, 1, 'Should call connect once');
-      assert.strictEqual(queryMock.mock.calls.length, 1, 'Should call query once');
-      
-      // Verify the SQL query contained specific keywords
-      const sqlCall = queryMock.mock.calls[0].arguments[0];
-      assert.match(sqlCall, /SELECT/, 'Query should select');
-      assert.match(sqlCall, /scores/, 'Query should query scores table');
-      assert.match(sqlCall, /ORDER BY score DESC/, 'Query should order by score');
+      assert.strictEqual(connectMock.mock.calls.length, 1, 'Should connect to Mongo once');
+      assert.strictEqual(dbMock.mock.calls.length, 1, 'Should request the DB once');
+      assert.strictEqual(collectionFn.mock.calls.length, 1, 'Should request scores collection');
+      assert.strictEqual(createIndexMock.mock.calls.length, 1, 'Should ensure index exists');
 
-      assert.strictEqual(releaseMock.mock.calls.length, 1, 'Should release the client');
+      assert.strictEqual(findMock.mock.calls.length, 1, 'Should query collection');
+      const findArgs = findMock.mock.calls[0].arguments[0];
+      assert.deepStrictEqual(findArgs, {}, 'Find should query all documents');
+
+      assert.strictEqual(sortMock.mock.calls.length, 1, 'Should sort results');
+      assert.deepStrictEqual(sortMock.mock.calls[0].arguments[0], { score: -1 });
+
+      assert.strictEqual(toArrayMock.mock.calls.length, 1, 'Should convert cursor to array');
       assert.deepStrictEqual(result, fakeRows, 'Should return the rows from DB');
     });
   });
@@ -69,32 +87,22 @@ describe('Points Module', () => {
     it('should initialize table, update score, and return new value', async () => {
       // Arrange
       const item = 'Charlie';
-      const operation = '+'; // logic in points.js appends '1' to this
+      const operation = '+';
       const expectedScore = 42;
-
-      // updateScore calls query() multiple times:
-      // 1. Create table/extension
-      // 2. Insert/Update
-      // 3. Select new score
-      
-      // We can mock checking the call arguments or just return values in sequence
-      queryMock.mock.mockImplementation(async (sql) => {
-        if (sql.includes('SELECT score')) {
-            return { rows: [{ score: expectedScore }] };
-        }
-        return { rows: [] }; // Default for create/insert
-      });
+      findOneAndUpdateMock.mock.mockImplementationOnce( async () => ( { value: { score: expectedScore } } ) );
 
       // Act
       const result = await points.updateScore(item, operation);
 
       // Assert
       assert.strictEqual(result, expectedScore);
-      assert.strictEqual(connectMock.mock.calls.length, 1, 'Should use one connection');
-      assert.strictEqual(releaseMock.mock.calls.length, 1, 'Should release connection');
-      
-      // Verify we had at least 3 queries
-      assert.ok(queryMock.mock.calls.length >= 3, 'Should verify table, update, and select');
+      assert.strictEqual(collectionFn.mock.calls.length, 1, 'Should request collection');
+      assert.strictEqual(createIndexMock.mock.calls.length, 1, 'Should ensure index exists');
+
+      assert.strictEqual(findOneAndUpdateMock.mock.calls.length, 1, 'Should upsert and fetch score');
+      const updateArgs = findOneAndUpdateMock.mock.calls[0].arguments;
+      assert.deepStrictEqual(updateArgs[0], { normalizedItem: item.toLowerCase() }, 'Should query by normalized item');
+      assert.deepStrictEqual(updateArgs[1].$inc, { score: 1 }, 'Should increment score positively');
     });
   });
 

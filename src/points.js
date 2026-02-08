@@ -2,7 +2,7 @@
  * All the stuff that handles the giving, taking away, or otherwise querying of points.
  *
  * NOTE: As the functions here pretty much deal exclusively with the database, they generally
- *       aren't unit tested, as that would require anyone who runs the tests to also have a Postgres
+ *       aren't unit tested, as that would require anyone who runs the tests to also have a MongoDB
  *       server. Instead, the functions in this file are well covered via the integration and
  *       end-to-end tests.
  *
@@ -11,20 +11,30 @@
 
 'use strict';
 
-import pg from 'pg';
+import { MongoClient } from 'mongodb';
 
 /* eslint-disable no-process-env */
-const DATABASE_URL = process.env.DATABASE_URL,
-      DATABASE_USE_SSL = 'false' === process.env.DATABASE_USE_SSL ? false : true;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://db:27017/plus',
+      MONGODB_DB = process.env.MONGODB_DB || 'plus',
+      SCORES_COLLECTION = process.env.MONGODB_COLLECTION || 'scores';
 /* eslint-enable no-process-env */
 
-const scoresTableName = 'scores',
-      postgresPoolConfig = {
-        connectionString: DATABASE_URL,
-        ssl: DATABASE_USE_SSL
-      };
+const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
+let dbPromise;
 
-const postgres = new pg.Pool( postgresPoolConfig );
+const getScoresCollection = async() => {
+  if ( !dbPromise ) {
+    dbPromise = mongoClient.connect().then( ( client ) => client.db( MONGODB_DB ) );
+  }
+
+  const db = await dbPromise;
+  const collection = db.collection( SCORES_COLLECTION );
+
+  // Ensure we have a unique index for case-insensitive lookups.
+  await collection.createIndex( { normalizedItem: 1 }, { unique: true } );
+
+  return collection;
+};
 
 /**
  * Retrieves all scores from the database, ordered from highest to lowest.
@@ -38,13 +48,11 @@ const postgres = new pg.Pool( postgresPoolConfig );
  */
 export const retrieveTopScores = async() => {
 
-  const query = 'SELECT * FROM ' + scoresTableName + ' ORDER BY score DESC';
+  const collection = await getScoresCollection();
 
-  const dbClient = await postgres.connect(),
-        result = await dbClient.query( query ),
-        scores = result.rows;
-
-  await dbClient.release();
+  const scores = await collection.find( {}, { projection: { _id: 0, item: 1, score: 1 } } )
+    .sort( { score: -1 } )
+    .toArray();
 
   return scores;
 
@@ -55,7 +63,7 @@ export const retrieveTopScores = async() => {
  * into the database with an assumed initial score of 0.
  *
  * This function also sets up the database if it is not already ready, including creating the
- * scores table and activating the Postgres case-insensitive extension.
+ * scores collection and ensuring a case-insensitive index exists.
  *
  * @param {string} item      The Slack user ID (if user) or name (if thing) of the item being
  *                           operated on.
@@ -64,29 +72,22 @@ export const retrieveTopScores = async() => {
  */
 export const updateScore = async( item, operation ) => {
 
-  // Connect to the DB, and create a table if it's not yet there.
-  // We also set up the citext extension, so that we can easily be case insensitive.
-  const dbClient = await postgres.connect();
-  await dbClient.query( '\
-    CREATE EXTENSION IF NOT EXISTS citext; \
-    CREATE TABLE IF NOT EXISTS ' + scoresTableName + ' (item CITEXT PRIMARY KEY, score INTEGER); \
-  ' );
+  const collection = await getScoresCollection();
+  const normalizedItem = item.toLowerCase();
+  const increment = '-' === operation ? -1 : 1;
 
-  // Atomically record the action.
-  // TODO: Fix potential SQL injection issues here, even though we know the input should be safe.
-  await dbClient.query( '\
-    INSERT INTO ' + scoresTableName + ' VALUES (\'' + item + '\', ' + operation + '1) \
-    ON CONFLICT (item) DO UPDATE SET score = ' + scoresTableName + '.score ' + operation + ' 1; \
-  ' );
+  // Atomically upsert and return the updated score.
+  const result = await collection.findOneAndUpdate(
+    { normalizedItem },
+    {
+      $setOnInsert: { normalizedItem },
+      $set: { item },
+      $inc: { score: increment }
+    },
+    { upsert: true, returnDocument: 'after', projection: { _id: 0, score: 1 } }
+  );
 
-  // Get the new value.
-  // TODO: Fix potential SQL injection issues here, even though we know the input should be safe.
-  const dbSelect = await dbClient.query( '\
-    SELECT score FROM ' + scoresTableName + ' WHERE item = \'' + item + '\'; \
-  ' );
-
-  await dbClient.release();
-  const score = dbSelect.rows[0].score;
+  const score = result.value?.score ?? 0;
 
   console.log( item + ' now on ' + score );
   return score;
