@@ -36,19 +36,23 @@ export const getUserList = async() => {
     return users;
   }
 
-  console.log( 'Retrieving user list from Slack.' );
+  console.log( 'Retrieving user list from Slack...' );
 
-  users = {};
-  const userList = await slack.users.list();
-
-  if ( ! userList.ok ) {
-    throw Error( 'Error occurred retrieving user list from Slack.' );
+  try {
+    const userList = await slack.users.list();
+    if ( !userList.ok ) {
+      console.error( 'Error retrieving user list from Slack:', userList.error );
+      throw new Error( 'Error retrieving user list from Slack: ' + userList.error );
+    }
+    console.log( `Successfully retrieved ${userList.members.length} users.` );
+    users = {};
+    for ( const user of userList.members ) {
+      users[ user.id ] = user;
+    }
+  } catch ( error ) {
+    console.error( 'Fatal error retrieving user list from Slack:', error );
+    throw error;
   }
-
-  for ( const user of userList.members ) {
-    users[ user.id ] = user;
-  }
-
   return users;
 
 }; // GetUserList.
@@ -84,32 +88,29 @@ export const getUserName = async( userId, username = false ) => {
  *                                be provided as part of the payload in the previous argument.
  * @return {Promise} A Promise to send the message to Slack.
  */
-export const sendMessage = ( text, channel ) => {
+export const sendMessage = async( text, channel ) => {
 
   let payload = {
     channel,
     text
   };
 
-  // If 'text' was provided as an object instead, merge it into the payload.
   if ( 'object' === typeof text ) {
     delete payload.text;
     payload = Object.assign( payload, text );
   }
 
-  return new Promise( ( resolve, reject ) => {
-    slack.chat.postMessage( payload ).then( ( data ) => {
+  try {
+    const data = await slack.chat.postMessage( payload );
+    if ( !data.ok ) {
+      console.error( 'Error posting Slack message:', data.error );
+      throw new Error( data.error );
+    }
+  } catch ( error ) {
+    console.error( 'Fatal error sending Slack message:', error );
+    throw error;
+  }
 
-      if ( ! data.ok ) {
-        console.error( 'Error occurred posting response.' );
-        return reject();
-      }
-
-      resolve();
-
-    });
-
-  }); // Return new Promise.
 }; // SendMessage.
 
 export default {
