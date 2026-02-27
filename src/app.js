@@ -47,7 +47,7 @@ const logRequest = ( request ) => {
 const validateToken = ( suppliedToken, serverToken ) => {
 
   // Sanity check for bad values on the server side - either empty, or still set to the default.
-  if ( ! serverToken.trim() || 'xxxxxxxxxxxxxxxxxxxxxxxx' === serverToken ) {
+  if ( !serverToken || !serverToken.trim() || 'xxxxxxxxxxxxxxxxxxxxxxxx' === serverToken ) {
     console.error( '500 Internal server error - bad verification value' );
     return {
       error: HTTP_500,

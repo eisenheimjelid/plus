@@ -19,12 +19,26 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://db:27017/plus',
       SCORES_COLLECTION = process.env.MONGODB_COLLECTION || 'scores';
 /* eslint-enable no-process-env */
 
+if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
+  console.error(
+    'FATAL: MONGODB_URI is not set or is set to the default development value. The application may not be able to connect to the database.'
+  );
+}
+
 const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
 let dbPromise;
 
 const getScoresCollection = async() => {
   if ( !dbPromise ) {
-    dbPromise = mongoClient.connect().then( ( client ) => client.db( MONGODB_DB ) );
+    console.log('Connecting to MongoDB...');
+    dbPromise = mongoClient.connect().then( ( client ) => {
+      console.log('Successfully connected to MongoDB.');
+      return client.db( MONGODB_DB );
+    }).catch(err => {
+      console.error('Error connecting to MongoDB:', err);
+      dbPromise = null; // Allow retrying connection on next request
+      throw err; // Propagate error to caller
+    });
   }
 
   const db = await dbPromise;
