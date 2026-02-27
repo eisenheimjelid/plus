@@ -21,8 +21,11 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://db:27017/plus',
 
 if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.error(
-    'FATAL: MONGODB_URI is not set or is set to the default development value. The application may not be able to connect to the database.'
+    'FATAL: MONGODB_URI no está configurada o está usando el valor por defecto de desarrollo. La aplicación no podrá conectarse a la base de datos.'
   );
+} else {
+  // Log para confirmar que la variable de entorno SÍ se está leyendo.
+  console.log(`MongoDB URI detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
 }
 
 const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
