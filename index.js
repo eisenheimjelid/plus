@@ -24,6 +24,14 @@ const PORT = process.env.PORT || 80; // Let Heroku set the port.
 const SLACK_OAUTH_ACCESS_TOKEN = process.env.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN;
 /* eslint-enable no-process-env, no-magic-numbers */
 
+if (!SLACK_OAUTH_ACCESS_TOKEN) {
+  console.error(
+    'FATAL: SLACK_BOT_USER_OAUTH_ACCESS_TOKEN no está configurada. La aplicación no podrá comunicarse con la API de Slack.'
+  );
+} else {
+  console.log('SLACK_BOT_USER_OAUTH_ACCESS_TOKEN detectado.');
+}
+
 /**
  * Starts the server and bootstraps the app.
  *
@@ -40,6 +48,10 @@ const bootstrap = ( options = {}) => {
   const server = options.express || express();
   slack.setSlackClient( options.slack || new slackClient.WebClient( SLACK_OAUTH_ACCESS_TOKEN ) );
 
+  const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
+
+  // Serve static files from the 'public' directory
+  server.use( express.static( path.join( __dirname, 'public' ) ) );
   server.use( bodyParser.json() );
   server.enable( 'trust proxy' );
   server.get( '/', app.handleGet );
@@ -47,17 +59,7 @@ const bootstrap = ( options = {}) => {
 
   // Favicon route - serves from the 'public' directory at the project root.
   server.get( '/favicon.ico', ( request, response ) => {
-    const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
     response.sendFile( path.join( __dirname, 'public', 'favicon.ico' ) );
-  });
-
-  // Static assets.
-  server.get( '/assets/*file', ( request, response ) => {
-    const path = 'src/' + request._parsedUrl.path,
-          type = mime.getType( path );
-
-    response.setHeader( 'Content-Type', type );
-    response.send( fs.readFileSync( path ) );
   });
 
   // Additional routes.
