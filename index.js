@@ -17,6 +17,7 @@ import mime from 'mime';
 import bodyParser from 'body-parser';
 import slackClient from '@slack/client';
 import { fileURLToPath } from 'url';
+import path from 'path';
 
 /* eslint-disable no-process-env, no-magic-numbers */
 const PORT = process.env.PORT || 80; // Let Heroku set the port.
@@ -43,6 +44,12 @@ const bootstrap = ( options = {}) => {
   server.enable( 'trust proxy' );
   server.get( '/', app.handleGet );
   server.post( '/', app.handlePost );
+
+  // Favicon route - serves from the 'public' directory at the project root.
+  server.get( '/favicon.ico', ( request, response ) => {
+    const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
+    response.sendFile( path.join( __dirname, 'public', 'favicon.ico' ) );
+  });
 
   // Static assets.
   server.get( '/assets/*file', ( request, response ) => {
