@@ -11,7 +11,7 @@
 
 'use strict';
 
-import { MongoClient } from 'mongodb';
+import { mongoose } from 'mongoose';
 
 /* eslint-disable no-process-env */
 const MONGODB_DB = process.env.MONGODB_DB || 'plus',
@@ -38,30 +38,36 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 36)}...`);
 }
 
-const mongoClient = new MongoClient( MONGODB_URI, { // eslint-disable-line no-use-before-define
-  serverSelectionTimeoutMS: 5000,
-  connectTimeoutMS: 5000,
-  socketTimeoutMS: 5000
-} );
-let dbPromise;
+// --- MongoDB Connection Logic ---
+let isConnected = false;
+let db = null;
 
-const getScoresCollection = async() => {
-  if (!dbPromise) {
-    dbPromise = (async () => {
-      try {
-        console.log('Connecting to MongoDB...');
-        const client = await mongoClient.connect();
-        console.log('Successfully connected to MongoDB.');
-        return client.db(MONGODB_DB);
-      } catch (err) {
-        console.error('Error connecting to MongoDB:', err);
-        dbPromise = null; // Allow retrying on next request
-        throw err;
-      }
-    })();
+const connectToDatabase = async () => {
+  if (isConnected) {
+    console.log("Using existing database connection");
+    return db;
   }
 
-  const db = await dbPromise;
+  try {
+    // Best practice for Vercel: Cache the connection in a global variable
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    isConnected = true;
+    db = mongoose.connection;
+    console.log("MongoDB Connected Successfully");
+    return db;
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw new Error(error);
+  }
+};
+// --- End MongoDB Connection Logic ---
+
+
+const getScoresCollection = async() => {
+  const db = await connectToDatabase();
   const collection = db.collection( SCORES_COLLECTION );
 
   // Ensure we have a unique index for case-insensitive lookups.
