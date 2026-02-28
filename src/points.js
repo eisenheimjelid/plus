@@ -38,16 +38,22 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
 }
 
-const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
+const mongoClient = new MongoClient( MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000,
+  connectTimeoutMS: 5000,
+  socketTimeoutMS: 5000,
+  loggerLevel: 'debug',
+  logger: (message, context) => console.debug(`[MongoDB Driver] ${message}`, context)
+} );
 let dbPromise;
 
 const getScoresCollection = async() => {
   if (!dbPromise) {
     dbPromise = (async () => {
       try {
-        console.log('Connecting to MongoDB client...');
+        console.log('Connecting to MongoDB...');
         const client = await mongoClient.connect();
-        console.log('Successfully connected to MongoDB client.');
+        console.log('Successfully connected to MongoDB.');
         return client.db(MONGODB_DB);
       } catch (err) {
         console.error('Error connecting to MongoDB:', err);
