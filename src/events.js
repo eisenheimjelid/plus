@@ -28,7 +28,7 @@ import camelCase from 'lodash.camelcase';
  */
 export const handleSelfPlus = ( user, channel ) => {
   console.log( user + ' tried to alter their own score.' );
-  const message = messages.getRandomMessage( operations.operations.SELF, user );
+  const message = messages.getRandomMessage( operations.SELF, user );
   return slack.sendMessage( message, channel );
 };
 
@@ -45,7 +45,7 @@ export const handleSelfPlus = ( user, channel ) => {
  */
 export const handlePlusMinus = async( item, operation, channel ) => {
   const score = await points.updateScore( item, operation ),
-        operationName = operations.getOperationName( operation ),
+        operationName = operationsPkg.getOperationName( operation ),
         message = messages.getRandomMessage( operationName, item, score );
 
   return slack.sendMessage( message, channel );
@@ -59,7 +59,7 @@ const handlePlusPlusMinusMinus = async( item, channel ) => {
 
   // Console.log(user + ' tried to do a wrong command with both operations');
   console.log( 'Item: ' + item );
-  const message = messages.getRandomMessage( operations.operations.MINUSPLUS, item );
+  const message = messages.getRandomMessage( operations.MINUSPLUS, item );
   return slack.sendMessage( message, channel );
 };
 
