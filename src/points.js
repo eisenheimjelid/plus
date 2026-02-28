@@ -50,6 +50,7 @@ const connectToDatabase = async () => {
 
   try {
     // Best practice for Vercel: Cache the connection in a global variable
+    console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 36)}...`);
     await mongoose.connect(MONGODB_URI, {});
     isConnected = true;
     db = mongoose.connection;
