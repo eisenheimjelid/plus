@@ -11,7 +11,7 @@
 
 'use strict';
 
-import { mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 
 /* eslint-disable no-process-env */
 const MONGODB_DB = process.env.MONGODB_DB || 'plus',
@@ -38,40 +38,36 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 36)}...`);
 }
 
-// --- MongoDB Connection Logic ---
-let isConnected = false;
-let db = null;
+// --- Mongoose Schema and Model ---
+const ScoreSchema = new mongoose.Schema({
+  item: String,
+  normalizedItem: { type: String, unique: true, index: true },
+  score: { type: Number, default: 0 }
+});
+
+const Score = mongoose.models.Score || mongoose.model('Score', ScoreSchema, SCORES_COLLECTION);
 
 const connectToDatabase = async () => {
-  if (isConnected) {
-    console.log("Using existing database connection");
-    return db;
+  // Mongoose manages connection pooling automatically.
+  // We check the readyState to prevent multiple connections in serverless environments.
+  if (mongoose.connection.readyState >= 1) {
+    console.log('Using existing database connection.');
+    return;
   }
 
   try {
-    // Best practice for Vercel: Cache the connection in a global variable
-    console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 36)}...`);
-    await mongoose.connect(MONGODB_URI, {});
-    isConnected = true;
-    db = mongoose.connection;
-    console.log("MongoDB Connected Successfully");
-    return db;
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(MONGODB_URI, { dbName: MONGODB_DB });
+    console.log('MongoDB Connected Successfully.');
   } catch (error) {
-    console.error("MongoDB connection error:", error);
-    throw new Error(error);
+    console.error('MongoDB connection error:', error);
+    throw error;
   }
 };
-// --- End MongoDB Connection Logic ---
 
-
-const getScoresCollection = async() => {
-  const db = await connectToDatabase();
-  const collection = db.collection( SCORES_COLLECTION );
-
-  // Ensure we have a unique index for case-insensitive lookups.
-  await collection.createIndex( { normalizedItem: 1 }, { unique: true } );
-
-  return collection;
+const getScoreModel = async () => {
+  await connectToDatabase();
+  return Score;
 };
 
 /**
@@ -86,11 +82,11 @@ const getScoresCollection = async() => {
  */
 export const retrieveTopScores = async() => {
 
-  const collection = await getScoresCollection();
+  const ScoreModel = await getScoreModel();
 
-  const scores = await collection.find( {}, { projection: { _id: 0, item: 1, score: 1 } } )
+  const scores = await ScoreModel.find( {}, { _id: 0, item: 1, score: 1 } )
     .sort( { score: -1 } )
-    .toArray();
+    .lean();
 
   return scores;
 
@@ -110,31 +106,29 @@ export const retrieveTopScores = async() => {
  */
 export const updateScore = async( item, operation ) => {
 
-  const collection = await getScoresCollection();
+  const ScoreModel = await getScoreModel();
   const normalizedItem = item.toLowerCase();
   const increment = '-' === operation ? -1 : 1;
 
   let result;
   try {
     console.log(`Attempting to update score for: ${item}`);
-    // Atomically upsert and return the updated score.
-    result = await collection.findOneAndUpdate(
+    result = await ScoreModel.findOneAndUpdate(
       { normalizedItem },
       {
-        $setOnInsert: { normalizedItem },
-        $set: { item },
+        $set: { item, normalizedItem },
         $inc: { score: increment }
       },
-      { upsert: true, returnDocument: 'after', projection: { _id: 0, score: 1 } }
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     console.log(`Successfully updated score for: ${item}`);
   } catch (err) {
     console.error(`Error updating score for ${item}:`, err);
     throw err;
   }
-
-  const score = result.value?.score ?? 0;
-
+  
+  const score = result?.score ?? 0;
+  
   console.log( item + ' now on ' + score );
   return score;
 
