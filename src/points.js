@@ -12,7 +12,6 @@
 'use strict';
 
 import { MongoClient } from 'mongodb';
-import { attachDatabasePool } from '@vercel/functions';
 
 /* eslint-disable no-process-env */
 const MONGODB_DB = process.env.MONGODB_DB || 'plus',
@@ -40,7 +39,6 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
 }
 
 const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
-attachDatabasePool(mongoClient);
 let dbPromise;
 
 const getScoresCollection = async() => {
