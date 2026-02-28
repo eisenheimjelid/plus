@@ -15,13 +15,20 @@ import { MongoClient } from 'mongodb';
 import { attachDatabasePool } from '@vercel/functions';
 
 /* eslint-disable no-process-env */
-const MONGODB_URI = process.env.plusplus_MONGODB_URI || process.env.MONGODB_URI || 'mongodb://db:27017/plus',
-      MONGODB_DB = process.env.MONGODB_DB || 'plus',
+const MONGODB_DB = process.env.MONGODB_DB || 'plus',
       SCORES_COLLECTION = process.env.MONGODB_COLLECTION || 'scores';
 /* eslint-enable no-process-env */
 
+let MONGODB_URI;
 if (process.env.plusplus_MONGODB_URI) {
-  console.log('Usando la variable de entorno `plusplus_MONGODB_URI` de la integración de Vercel.');
+  console.log('INFO: Variable `plusplus_MONGODB_URI` de la integración de Vercel encontrada. Usando esta URI.');
+  MONGODB_URI = process.env.plusplus_MONGODB_URI;
+} else if (process.env.MONGODB_URI) {
+  console.log('INFO: Variable `MONGODB_URI` estándar encontrada. Usando esta URI.');
+  MONGODB_URI = process.env.MONGODB_URI;
+} else {
+  console.warn('ADVERTENCIA: No se encontraron variables de entorno para MongoDB. Usando el valor por defecto para desarrollo local.');
+  MONGODB_URI = 'mongodb://db:27017/plus';
 }
 
 if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
@@ -29,7 +36,6 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
     'FATAL: MONGODB_URI no está configurada o está usando el valor por defecto de desarrollo. La aplicación no podrá conectarse a la base de datos.'
   );
 } else {
-  // Log para confirmar que la variable de entorno SÍ se está leyendo.
   console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
 }
 
