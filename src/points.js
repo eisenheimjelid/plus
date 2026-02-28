@@ -35,7 +35,7 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
     'FATAL: MONGODB_URI no está configurada o está usando el valor por defecto de desarrollo. La aplicación no podrá conectarse a la base de datos.'
   );
 } else {
-  console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
+  console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 36)}...`);
 }
 
 const mongoClient = new MongoClient( MONGODB_URI, { // eslint-disable-line no-use-before-define
