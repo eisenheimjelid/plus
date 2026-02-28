@@ -43,14 +43,10 @@ if (!SLACK_OAUTH_ACCESS_TOKEN) {
  *                        https://nodejs.org/api/http.html#http_class_http_server for details.
  */
 const bootstrap = ( options = {}) => {
-
-  // Allow alternative implementations of both Express and Slack to be passed in.
   const server = options.express || express();
   slack.setSlackClient( options.slack || new slackClient.WebClient( SLACK_OAUTH_ACCESS_TOKEN ) );
 
   const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
-
-  // Serve static files from the 'public' directory
   server.use( express.static( path.join( __dirname, 'public' ) ) );
   server.use( bodyParser.json() );
   server.enable( 'trust proxy' );
@@ -66,15 +62,17 @@ const bootstrap = ( options = {}) => {
   server.get( '/leaderboard', app.handleGet );
   server.get( '/top', app.handleGet );
 
-  return server.listen( PORT, () => {
-    console.log( 'Listening on port ' + PORT + '.' );
-  });
+  return server;
 
 }; // Bootstrap.
 
+const server = bootstrap();
+
 // If module was called directly, bootstrap now.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  bootstrap();
+  server.listen( PORT, () => {
+    console.log( 'Listening on port ' + PORT + '.' );
+  });
 }
 
-export default bootstrap;
+export default server;

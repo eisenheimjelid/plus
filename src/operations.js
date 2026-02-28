@@ -23,7 +23,7 @@ export const getOperationName = ( operation ) => {
 
   /* eslint-disable max-statements-per-line */
   switch ( operation ) {
-    case '++--': operationName = operation.MINUSPLUS; break;
+    case '++--': operationName = operations.MINUSPLUS; break;
     case '+': operationName = operations.PLUS; break;
     case '-': operationName = operations.MINUS; break;
   }
