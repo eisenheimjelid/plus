@@ -50,10 +50,7 @@ const connectToDatabase = async () => {
 
   try {
     // Best practice for Vercel: Cache the connection in a global variable
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGODB_URI, {});
     isConnected = true;
     db = mongoose.connection;
     console.log("MongoDB Connected Successfully");
