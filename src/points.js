@@ -36,16 +36,19 @@ const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 50
 let dbPromise;
 
 const getScoresCollection = async() => {
-  if ( !dbPromise ) {
-    console.log('Connecting to MongoDB...');
-    dbPromise = mongoClient.connect().then( ( client ) => {
-      console.log('Successfully connected to MongoDB.');
-      return client.db( MONGODB_DB );
-    }).catch(err => {
-      console.error('Error connecting to MongoDB:', err);
-      dbPromise = null; // Allow retrying connection on next request
-      throw err; // Propagate error to caller
-    });
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        console.log('Connecting to MongoDB client...');
+        const client = await mongoClient.connect();
+        console.log('Successfully connected to MongoDB client.');
+        return client.db(MONGODB_DB);
+      } catch (err) {
+        console.error('Error connecting to MongoDB:', err);
+        dbPromise = null; // Allow retrying on next request
+        throw err;
+      }
+    })();
   }
 
   const db = await dbPromise;
@@ -97,16 +100,24 @@ export const updateScore = async( item, operation ) => {
   const normalizedItem = item.toLowerCase();
   const increment = '-' === operation ? -1 : 1;
 
-  // Atomically upsert and return the updated score.
-  const result = await collection.findOneAndUpdate(
-    { normalizedItem },
-    {
-      $setOnInsert: { normalizedItem },
-      $set: { item },
-      $inc: { score: increment }
-    },
-    { upsert: true, returnDocument: 'after', projection: { _id: 0, score: 1 } }
-  );
+  let result;
+  try {
+    console.log(`Attempting to update score for: ${item}`);
+    // Atomically upsert and return the updated score.
+    result = await collection.findOneAndUpdate(
+      { normalizedItem },
+      {
+        $setOnInsert: { normalizedItem },
+        $set: { item },
+        $inc: { score: increment }
+      },
+      { upsert: true, returnDocument: 'after', projection: { _id: 0, score: 1 } }
+    );
+    console.log(`Successfully updated score for: ${item}`);
+  } catch (err) {
+    console.error(`Error updating score for ${item}:`, err);
+    throw err;
+  }
 
   const score = result.value?.score ?? 0;
 
