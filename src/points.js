@@ -38,12 +38,10 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
 }
 
-const mongoClient = new MongoClient( MONGODB_URI, {
+const mongoClient = new MongoClient( MONGODB_URI, { // eslint-disable-line no-use-before-define
   serverSelectionTimeoutMS: 5000,
   connectTimeoutMS: 5000,
-  socketTimeoutMS: 5000,
-  loggerLevel: 'debug',
-  logger: (message, context) => console.debug(`[MongoDB Driver] ${message}`, context)
+  socketTimeoutMS: 5000
 } );
 let dbPromise;
 
