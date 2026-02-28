@@ -14,10 +14,14 @@
 import { MongoClient } from 'mongodb';
 
 /* eslint-disable no-process-env */
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://db:27017/plus',
+const MONGODB_URI = process.env.plusplus_MONGODB_URI || process.env.MONGODB_URI || 'mongodb://db:27017/plus',
       MONGODB_DB = process.env.MONGODB_DB || 'plus',
       SCORES_COLLECTION = process.env.MONGODB_COLLECTION || 'scores';
 /* eslint-enable no-process-env */
+
+if (process.env.plusplus_MONGODB_URI) {
+  console.log('Usando la variable de entorno `plusplus_MONGODB_URI` de la integración de Vercel.');
+}
 
 if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   console.error(
@@ -25,7 +29,7 @@ if (!MONGODB_URI || MONGODB_URI === 'mongodb://db:27017/plus') {
   );
 } else {
   // Log para confirmar que la variable de entorno SÍ se está leyendo.
-  console.log(`MongoDB URI detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
+  console.log(`URI de MongoDB detectada, comenzando con: ${MONGODB_URI.substring(0, 20)}...`);
 }
 
 const mongoClient = new MongoClient( MONGODB_URI, { serverSelectionTimeoutMS: 5000 } );
