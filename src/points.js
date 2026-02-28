@@ -119,7 +119,7 @@ export const updateScore = async( item, operation ) => {
         $set: { item, normalizedItem },
         $inc: { score: increment }
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     );
     console.log(`Successfully updated score for: ${item}`);
   } catch (err) {
